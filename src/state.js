@@ -40,11 +40,11 @@ export default class State {
   }
 
   static init() {
-    singleton = new InternalState({ time: timestamp(), trace: [] });
     return Promise.resolve(singleton = new InternalState({ time: timestamp(), trace: [] }));
   }
 
   static get() {
+    State.ensureInit();
     return singleton;
   }
 
