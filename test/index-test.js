@@ -4,14 +4,21 @@ import event from './event.json';
 import utils from './setup';
 import { CloudWatchLogs, sendgrid } from './stubs';
 import { CloudwatchLogsNotifier, handler } from '../src/index';
+import State from '../src/state';
 
 describe('handler', () => {
   let callback;
 
   const assertCallback = () => {
     expect(callback).to.have.been.calledOnce();
+    expect(callback.firstCall.args[0]).to.be.null();
     expect(callback.firstCall.args[1].trace).to.have.lengthOf(5);
     expect(callback.firstCall.args[1].level).to.equal('info');
+  };
+
+  const assertErrorCallback = () => {
+    expect(callback).to.have.been.calledOnce();
+    expect(callback).to.have.been.calledWithExactly(utils.match.object);
   };
 
   beforeEach(() => {
@@ -126,5 +133,37 @@ describe('handler', () => {
         expect(sendgrid.API.firstCall.args[0].body.content[0].value).to.match(/test 1/);
       });
     });
+  });
+
+  describe('error handling', () => {
+    beforeEach(() => utils.stub(console, 'error'));
+
+    [
+      ['State.init', [State, 'init']],
+      ['State.info', [State, 'info'], s => s.returns(() => Promise.reject(new Error('State.info error')))],
+      [
+        'CloudWatchLogs.describeMetricFilters',
+        [CloudWatchLogs, 'describeMetricFilters'],
+        s => s.callsArgWith(1, new Error('CloudWatchLogs.describeMetricFilters error'))
+      ],
+      [
+        'CloudWatchLogs.filterLogEvents',
+        [CloudWatchLogs, 'filterLogEvents'],
+        s => s.callsArgWith(1, new Error('CloudWatchLogs.filterLogEvents error'))
+      ],
+      ['CloudwatchLogsNotifier.prototype.buildEmail', [CloudwatchLogsNotifier.prototype, 'buildEmail']],
+      ['sendgrid.API', [sendgrid, 'API']]
+    ].forEach(([name, fn, genStub]) => it(`handles failure when calling ${name}`, () => {
+      if (typeof genStub === 'function') {
+        genStub(utils.stub(...fn));
+      } else {
+        utils.stub(...fn).returns(Promise.reject(new Error(`${name} error`)));
+      }
+
+      return handler(event, {}, callback).then(() => {
+        assertErrorCallback();
+        expect(fn[0][fn[1]]).to.have.been.called();
+      });
+    }));
   });
 });
