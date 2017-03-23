@@ -90,7 +90,7 @@ const sendEmail = (email) => {
 
 exports.handler = (event, context, callback) => {
   const message = JSON.parse(event.Records[0].Sns.Message);
-  console.log(`Processing CloudWatch alarm\n\n${JSON.stringify(message, null, 2)}`);
+  console.log(JSON.stringify({ 'Cloudwatch alarm': message }, null, 2));
 
   getMetricFilters(message)
     .then(getLogs.bind(null, message))
@@ -98,7 +98,7 @@ exports.handler = (event, context, callback) => {
     .then(sendEmail)
     .then(r => {
       const res = { code: r.statusCode, body: r.body, headers: r.headers };
-      console.log(`SendGrid response:\n\n${JSON.stringify(res, null, 2)}`)
+      console.log(JSON.stringify({ 'SendGrid response': res }, null, 2));
       callback(null, res);
     })
     .catch(e => { console.error(e); callback(e); });
