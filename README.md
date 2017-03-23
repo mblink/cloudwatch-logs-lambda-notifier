@@ -10,6 +10,7 @@ Logs events using the SendGrid API.
 Clone the repository, then run the following:
 
 ```bash
+$ npm install
 $ cp .env.sample .env
 $ cp deploy.env.sample deploy.env
 $ cp event.json.sample event.json
@@ -17,7 +18,11 @@ $ cp event.json.sample event.json
 
 In `.env`, replace the value of `AWS_ROLE_ARN` with the value you create below in ["Create a role"](#create-a-role).
 
-In `deploy.env`, add your own secret values to use when sending the email notification with SendGrid.
+In `deploy.env`, add your own secret values to use when sending the email notification with SendGrid. The values are:
+
+- `FROM_EMAIL`: The email address you'd like the notification to appear to be sent from
+- `TO_EMAIL`: The email address you'd like the notification to be sent to
+- `SENDGRID_API_KEY`: Your SendGrid API key. If necessary, you can [create a new one here](https://app.sendgrid.com/settings/api_keys)
 
 ### Create a role
 
