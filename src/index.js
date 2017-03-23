@@ -46,34 +46,40 @@ const getLogs = (message, data, nextToken) => {
   return getPaginatedLogs(params, []);
 };
 
-const sendEmail = (message, [params, events]) => {
-  const from = new sendgrid.mail.Email(process.env.FROM_EMAIL, 'AWS Lambda');
-  const to = new sendgrid.mail.Email(process.env.TO_EMAIL);
-  const subject = `ALARM: "${message.AlarmName}"`;
-  const [start, end] = getTimeframe(message);
-  const logsUrl = 'https://console.aws.amazon.com/cloudwatch/home#logEventViewer' +
-                    `:group=${params.logGroupName};filter=${encodeURIComponent(params.filterPattern)};` +
-                    `start=${start.toISOString()};end=${end.toISOString()}`;
-  const body = new sendgrid.mail.Content('text/html', `
-    <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-    <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
-      <head>
-        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-        <meta name="viewport" content="width=device-width">
-        <title>${subject}</title>
-      </head>
-      <body>
-        Alarm: ${message.AlarmName}<br>
-        Time: ${end.toString()}<br>
-        Logs:<br><br>
-        <pre>${events.map(e => { try { return JSON.stringify(JSON.parse(e.message), null, 2); } catch (e) { return e.message; } }).join('<hr>')}</pre>
-        <br>
-        View logs:
-        <a href="${logsUrl}">${logsUrl}</a>
-      </body>
-    </html>
-  `);
-  const email = new sendgrid.mail.Mail(from, subject, to, body);
+const buildEmail = (message, [params, events]) => {
+  return new Promise(resolve => {
+    const from = new sendgrid.mail.Email(process.env.FROM_EMAIL, 'AWS Lambda');
+    const to = new sendgrid.mail.Email(process.env.TO_EMAIL);
+    const subject = `ALARM: "${message.AlarmName}"`;
+    const [start, end] = getTimeframe(message);
+    const logsUrl = 'https://console.aws.amazon.com/cloudwatch/home#logEventViewer' +
+                      `:group=${params.logGroupName};filter=${encodeURIComponent(params.filterPattern)};` +
+                      `start=${start.toISOString()};end=${end.toISOString()}`;
+    const body = new sendgrid.mail.Content('text/html', `
+      <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+      <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+        <head>
+          <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+          <meta name="viewport" content="width=device-width">
+          <title>${subject}</title>
+        </head>
+        <body>
+          Alarm: ${message.AlarmName}<br>
+          Time: ${end.toString()}<br>
+          Logs:<br><br>
+          <pre>${events.map(e => { try { return JSON.stringify(JSON.parse(e.message), null, 2); } catch (e) { return e.message; } }).join('<hr>')}</pre>
+          <br>
+          View logs:
+          <a href="${logsUrl}">${logsUrl}</a>
+        </body>
+      </html>
+    `);
+
+    resolve(new sendgrid.mail.Mail(from, subject, to, body));
+  });
+};
+
+const sendEmail = (email) => {
   const sg = sendgrid(process.env.SENDGRID_API_KEY);
   return sg.API(sg.emptyRequest({
     method: 'POST',
@@ -88,7 +94,8 @@ exports.handler = (event, context, callback) => {
 
   getMetricFilters(message)
     .then(getLogs.bind(null, message))
-    .then(sendEmail.bind(null, message))
+    .then(buildEmail.bind(null, message))
+    .then(sendEmail)
     .then(r => {
       const res = { code: r.statusCode, body: r.body, headers: r.headers };
       console.log(`SendGrid response:\n\n${JSON.stringify(res, null, 2)}`)
