@@ -3,9 +3,7 @@
 This is a [lambda](https://aws.amazon.com/lambda/) that will notify via email about alarms triggered by Cloudwatch
 Logs events using the SendGrid API.
 
-## Getting started
-
-### Setup
+## Setup
 
 Clone the repository, then run the following:
 
@@ -17,6 +15,7 @@ $ cp event.json.sample event.json
 ```
 
 In `.env`, replace the value of `AWS_ROLE_ARN` with the value you create below in ["Create a role"](#create-a-role).
+Replace other config values as necessary,
 
 In `deploy.env`, add your own secret values to use when sending the email notification with SendGrid. The values are:
 
@@ -32,7 +31,7 @@ to choose a role type, select "AWS Lambda." When you're prompted to attach polic
 
 Once you've finished creating the role, copy the ARN and put it in `.env` as mentioned above.
 
-## Run the lambda function locally
+## Run locally
 
 To run the lambda function locally using the contents of `event.json` as the payload, run:
 
@@ -40,18 +39,31 @@ To run the lambda function locally using the contents of `event.json` as the pay
 $ npm run local
 ```
 
-## Package the lambda
-
-To package the lambda as a zip file for manual upload to AWS, run:
-
-```bash
-$ npm run package
-```
-
-## Deploy the lambda
+## Deploy
 
 To deploy the lambda to AWS, run:
 
 ```bash
 $ npm run deploy
 ```
+
+## Package
+
+If you want to package the lambda as a zip file for manual upload to AWS, run:
+
+```bash
+$ npm run package
+```
+
+### Subscribe to a CloudWatch alarm
+
+In the [CloudWatch alarms console](https://console.aws.amazon.com/cloudwatch/home#alarm:alarmFilter=ANY), create a
+new alarm for your log stream and specify the SNS topic that it should send notifications to (you'll have the option
+to create a new one).
+
+Once that's done, find your SNS topic's ARN in the
+[SNS topics console](https://console.aws.amazon.com/sns/v2/home#/topics) and create a new subscription in the
+[SNS subscriptions console](https://console.aws.amazon.com/sns/v2/home#/subscriptions). Your subscription should look
+like this:
+
+![subscription](https://cloud.githubusercontent.com/assets/4718399/24247231/3bd1c458-0fa1-11e7-8762-23eb03735462.png)
