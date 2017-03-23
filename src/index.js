@@ -1,7 +1,6 @@
 import { CloudWatchLogs } from 'aws-sdk';
 import sendgrid from 'sendgrid';
-
-const withObj = (obj, ...fns) => fns.forEach(fn => fn(obj));
+import State from './state';
 
 class CloudwatchLogsNotifier {
   static createSendGridClient() { return sendgrid(process.env.SENDGRID_API_KEY); }
@@ -17,17 +16,18 @@ class CloudwatchLogsNotifier {
   }
 
   handle(callback) {
-    console.log(JSON.stringify({ 'Cloudwatch alarm': this.message }, null, 2));
-    return this.getMetricFilters()
+    return State.init()
+      .then(State.info('CloudWatch alarm', this.message))
+      .then(this.getMetricFilters.bind(this))
+      .then(State.info('CloudWatch metrics filters'))
       .then(this.getLogs.bind(this))
+      .then(State.info('CloudWatch filtered logs'))
       .then(this.buildEmail.bind(this))
+      .then(State.info('SendGrid email'))
       .then(this.sendEmail.bind(this))
-      .then(r => withObj(
-        { 'SendGrid response': { code: r.statusCode, body: r.body, headers: r.headers } },
-        res => console.log(JSON.stringify(res, null, 2)),
-        callback.bind(null, null)
-      ))
-      .catch(e => withObj(e, console.error, callback));
+      .then(State.info('SendGrid response'))
+      .catch(e => State.error(e.name, { error: e.toString() }))
+      .then(() => State.finalize(callback));
   }
 
   getMetricFilters() {

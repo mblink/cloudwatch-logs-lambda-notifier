@@ -4,7 +4,7 @@
   "description": "",
   "scripts": {
     "clean": "rm -rf {build,dist} && mkdir dist",
-    "compile": "babel src/index.js -o dist/index.js",
+    "compile": "babel src -d dist",
     "deploy": "npm run clean && npm run compile && node-lambda deploy -e production",
     "lint": "eslint --config .eslintrc.js src test",
     "local": "npm run compile && node-lambda run",

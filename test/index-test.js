@@ -8,11 +8,10 @@ import { CloudwatchLogsNotifier, handler } from '../src/index';
 describe('handler', () => {
   let callback;
 
-  const successArgs = [null, { 'SendGrid response': { code: 200, body: 'test body', headers: ['test header'] } }];
-  const assertCallback = (args) => {
-    const realArgs = args || successArgs;
+  const assertCallback = () => {
     expect(callback).to.have.been.calledOnce();
-    expect(callback).to.have.been.calledWithExactly(...realArgs);
+    expect(callback.firstCall.args[1].trace).to.have.lengthOf(5);
+    expect(callback.firstCall.args[1].level).to.equal('info');
   };
 
   beforeEach(() => {

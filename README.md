@@ -29,7 +29,7 @@ In `deploy.env`, add your own secret values to use when sending the email notifi
 
 In the [IAM roles console](https://console.aws.amazon.com/iam/home#/roles), create a new role. When you're prompted
 to choose a role type, select "AWS Lambda." When you're prompted to attach policies, attach the one named
-"CloudWatchLogsReadOnlyAccess."
+"CloudWatchLogsFullAccess."
 
 Once you've finished creating the role, copy the ARN and put it in `.env` as mentioned above.
 
