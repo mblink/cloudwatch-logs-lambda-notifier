@@ -14,25 +14,35 @@ const getMetricFilters = (message) => {
   });
 };
 
-const getLogs = (message, data) => {
+const getPaginatedLogs = (params, events) => {
   return new Promise((resolve, reject) => {
-    if (data.metricFilters.length === 0) { return reject(new Error('CloudWatch returned no metric filters')); }
-
-    const offset = message.Trigger.Period * message.Trigger.EvaluationPeriods * 1000;
-    const timestamp = Date.parse(message.StateChangeTime);
-    const metricFilter = data.metricFilters[0];
-    const params = {
-      logGroupName: metricFilter.logGroupName,
-      filterPattern: metricFilter.filterPattern || '',
-      startTime: timestamp - offset,
-      endTime: timestamp
-    };
-
-    cwLogs.filterLogEvents(params, (err, data) => err ? reject(err) : resolve([metricFilter.logGroupName, data]));
+    cwLogs.filterLogEvents(params, (err, data) => {
+      if (err) { return reject(err); }
+      const newEvents = events.concat(data.events);
+      return data.nextToken
+        ? getPaginatedLogs(Object.assign(params, { nextToken: data.nextToken }), newEvents).then(resolve)
+        : resolve([params, newEvents]);
+    });
   });
 };
 
-const sendEmail = (message, [logGroupName, data]) => {
+const getLogs = (message, data, nextToken) => {
+  if (data.metricFilters.length === 0) { return Promise.reject(new Error('CloudWatch returned no metric filters')); }
+
+  const offset = message.Trigger.Period * message.Trigger.EvaluationPeriods * 1000;
+  const timestamp = Date.parse(message.StateChangeTime);
+  const metricFilter = data.metricFilters[0];
+  const params = {
+    logGroupName: metricFilter.logGroupName,
+    filterPattern: metricFilter.filterPattern || '',
+    startTime: timestamp - offset,
+    endTime: timestamp
+  };
+
+  return getPaginatedLogs(params, []);
+};
+
+const sendEmail = (message, [logGroupName, events]) => {
   const from = new sendgrid.mail.Email(process.env.FROM_EMAIL, 'AWS Lambda');
   const to = new sendgrid.mail.Email(process.env.TO_EMAIL);
   const subject = `ALARM: "${message.AlarmName}"`;
@@ -49,7 +59,7 @@ const sendEmail = (message, [logGroupName, data]) => {
         Alarm: ${message.AlarmName}<br>
         Time: ${(new Date(message.StateChangeTime)).toString()}<br>
         Logs:<br><br>
-        <pre>${data.events.map(e => { try { return JSON.stringify(JSON.parse(e.message), null, 2); } catch (e) { return e.message; } }).join('<hr>')}</pre>
+        <pre>${events.map(e => { try { return JSON.stringify(JSON.parse(e.message), null, 2); } catch (e) { return e.message; } }).join('<hr>')}</pre>
         <br>
         View logs:
         <a href="${logsUrl}">${logsUrl}</a>
@@ -67,15 +77,14 @@ const sendEmail = (message, [logGroupName, data]) => {
 
 exports.handler = (event, context, callback) => {
   const message = JSON.parse(event.Records[0].Sns.Message);
-  console.log('Processing log...');
-  console.log(JSON.stringify(message, null, 2));
+  console.log(`Processing CloudWatch alarm\n\n${JSON.stringify(message, null, 2)}`);
 
   getMetricFilters(message)
     .then(getLogs.bind(null, message))
     .then(sendEmail.bind(null, message))
     .then(r => {
-      const res = { 'SendGrid response': { code: r.statusCode, body: r.body, headers: r.headers } };
-      console.log(JSON.stringify(res, null, 2));
+      const res = { code: r.statusCode, body: r.body, headers: r.headers };
+      console.log(`SendGrid response:\n\n${JSON.stringify(res, null, 2)}`)
       callback(null, res);
     })
     .catch(e => { console.error(e); callback(e); });
