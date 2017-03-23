@@ -6,6 +6,7 @@
     "clean": "rm -rf {build,dist} && mkdir dist",
     "compile": "babel src/index.js -o dist/index.js",
     "deploy": "npm run clean && npm run compile && node-lambda deploy -e production",
+    "lint": "eslint --config .eslintrc.js src",
     "local": "npm run compile && node-lambda run",
     "package": "npm run clean && npm run compile && node-lambda package -e production",
     "postinstall": "node-lambda setup"
@@ -24,6 +25,9 @@
   "devDependencies": {
     "babel-cli": "^6.24.0",
     "babel-preset-es2015": "^6.24.0",
+    "eslint": "^3.18.0",
+    "eslint-config-airbnb": "^14.1.0",
+    "eslint-plugin-import": "^2.2.0",
     "node-lambda": "^0.8.13"
   }
 }
