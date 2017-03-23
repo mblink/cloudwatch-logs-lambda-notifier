@@ -26,7 +26,7 @@ class CloudwatchLogsNotifier {
       .then(State.info('SendGrid email'))
       .then(this.sendEmail.bind(this))
       .then(State.info('SendGrid response'))
-      .catch(e => State.error(e.name, { error: e.toString() }))
+      .catch(e => State.error(e.name, { error: e.toString() })())
       .then(() => State.finalize(callback));
   }
 
