@@ -2,6 +2,8 @@ import { CloudWatchLogs } from 'aws-sdk';
 import sendgrid from 'sendgrid';
 import State from './state';
 
+const stackTrace = e => (e.stack || []).split('\n').slice(1).map(l => l.trim().replace(/^at /, ''));
+
 class CloudwatchLogsNotifier {
   static createSendGridClient() { return sendgrid(process.env.SENDGRID_API_KEY); }
 
@@ -26,7 +28,7 @@ class CloudwatchLogsNotifier {
       .then(State.info('SendGrid email'))
       .then(this.sendEmail.bind(this))
       .then(State.info('SendGrid response'))
-      .catch(e => State.error(e.name, { error: e.toString() })())
+      .catch(e => State.error(e.name || 'Unknown error', { error: e.toString(), stack: stackTrace(e) })())
       .then(() => State.finalize(callback));
   }
 
