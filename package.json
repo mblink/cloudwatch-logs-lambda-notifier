@@ -20,8 +20,8 @@
   "license": "UNLICENSED",
   "private": true,
   "dependencies": {
-    "aws-sdk": "^2.30.0",
-    "sendgrid": "^4.8.4"
+    "aws-sdk": "^2.34.0",
+    "sendgrid": "^4.9.0"
   },
   "devDependencies": {
     "babel-cli": "^6.24.0",
@@ -33,7 +33,7 @@
     "eslint-plugin-import": "^2.2.0",
     "mocha": "^3.2.0",
     "mocha-better-spec-reporter": "^3.1.0",
-    "node-lambda": "^0.8.13",
+    "node-lambda": "^0.8.15",
     "sinon": "^2.1.0",
     "sinon-chai": "^2.9.0"
   }
