@@ -111,6 +111,30 @@ describe('handler', () => {
         expect(sg.mail.Mail.firstCall.args[3].value).to.match(/test 1<hr>test 2/);
       });
     });
+
+    it('html encodes the text of the log messages in the body', () => {
+      utils.stub(CloudWatchLogs, 'filterLogEvents').callsArgWith(1, null, {
+        events: [{ message: '<div>test</div>' }]
+      });
+      return handler(event, {}, callback).then(() => {
+        assertCallback();
+        expect(sg.mail.Mail).to.have.been.calledOnce();
+        expect(sg.mail.Mail.firstCall.args[3].type).to.equal('text/html');
+        expect(sg.mail.Mail.firstCall.args[3].value).to.match(/&#x3C;div&#x3E;test&#x3C;\/div&#x3E;/);
+      });
+    });
+
+    it('pretty prints JSON log messages in the body', () => {
+      utils.stub(CloudWatchLogs, 'filterLogEvents').callsArgWith(1, null, {
+        events: [{ message: '{"test": true}' }]
+      });
+      return handler(event, {}, callback).then(() => {
+        assertCallback();
+        expect(sg.mail.Mail).to.have.been.calledOnce();
+        expect(sg.mail.Mail.firstCall.args[3].type).to.equal('text/html');
+        expect(sg.mail.Mail.firstCall.args[3].value).to.match(/\n {2}&#x22;test&#x22;: true\n}/);
+      });
+    });
   });
 
   describe('SendGrid API calls', () => {

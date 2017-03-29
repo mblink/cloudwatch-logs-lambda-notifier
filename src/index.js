@@ -1,4 +1,5 @@
 import { CloudWatchLogs } from 'aws-sdk';
+import he from 'he';
 import sendgrid from 'sendgrid';
 import State from './state';
 
@@ -80,11 +81,13 @@ class CloudwatchLogsNotifier {
                         `:group=${params.logGroupName};filter=${encodeURIComponent(params.filterPattern)};` +
                         `start=${this.start.toISOString()};end=${this.end.toISOString()}`;
       const messages = events.map((e) => {
+        let message;
         try {
-          return JSON.stringify(JSON.parse(e.message), null, 2);
+          message = JSON.stringify(JSON.parse(e.message), null, 2);
         } catch (_) {
-          return e.message;
+          message = e.message;
         }
+        return he.encode(message);
       });
       const body = new sendgrid.mail.Content('text/html', `
         <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
@@ -93,16 +96,16 @@ class CloudwatchLogsNotifier {
           <head>
             <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
             <meta name="viewport" content="width=device-width">
-            <title>${subject}</title>
+            <title>${he.encode(subject)}</title>
           </head>
           <body>
-            Alarm: ${this.message.AlarmName}<br>
-            Time: ${this.end.toString()}<br>
+            Alarm: ${he.encode(this.message.AlarmName)}<br>
+            Time: ${he.encode(this.end.toString())}<br>
             Logs:<br><br>
             <pre>${messages.join('<hr>')}</pre>
             <br>
             View logs:
-            <a href="${logsUrl}">${logsUrl}</a>
+            <a href="${he.encode(logsUrl)}">${he.encode(logsUrl)}</a>
           </body>
         </html>
       `);
