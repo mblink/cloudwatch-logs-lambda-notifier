@@ -77,9 +77,11 @@ class CloudwatchLogsNotifier {
       const from = new sendgrid.mail.Email(process.env.FROM_EMAIL, 'AWS Lambda');
       const to = new sendgrid.mail.Email(process.env.TO_EMAIL);
       const subject = `ALARM: "${this.message.AlarmName}"`;
-      const logsUrl = 'https://console.aws.amazon.com/cloudwatch/home#logEventViewer' +
-                        `:group=${params.logGroupName};filter=${encodeURIComponent(params.filterPattern)};` +
-                        `start=${this.start.toISOString()};end=${this.end.toISOString()}`;
+      const logsUrl = 'https://console.aws.amazon.com/cloudwatch/home#logEventViewer:' +
+                        `group=${encodeURIComponent(params.logGroupName)};` +
+                        `filter=${encodeURIComponent(params.filterPattern)};` +
+                        `start=${encodeURIComponent(this.start.toISOString())};` +
+                        `end=${encodeURIComponent(this.end.toISOString())}`;
       const messages = events.map((e) => {
         let message;
         try {
@@ -89,26 +91,13 @@ class CloudwatchLogsNotifier {
         }
         return he.encode(message);
       });
-      const body = new sendgrid.mail.Content('text/html', `
-        <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-          "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-        <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
-          <head>
-            <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-            <meta name="viewport" content="width=device-width">
-            <title>${he.encode(subject)}</title>
-          </head>
-          <body>
-            Alarm: ${he.encode(this.message.AlarmName)}<br>
-            Time: ${he.encode(this.end.toString())}<br>
-            Logs:<br><br>
-            <pre>${messages.join('<hr>')}</pre>
-            <br>
-            View logs:
-            <a href="${he.encode(logsUrl)}">${he.encode(logsUrl)}</a>
-          </body>
-        </html>
-      `);
+      const body = new sendgrid.mail.Content('text/html',
+        `Alarm: ${he.encode(this.message.AlarmName)}<br>
+        Time: ${he.encode(this.end.toString())}<br>
+        Logs:<br><br>
+        <pre>${messages.join('<hr>')}</pre>
+        <br>
+        <a href="${he.encode(logsUrl)}">View logs in CloudWatch</a>`);
 
       resolve(new sendgrid.mail.Mail(from, subject, to, body));
     });
