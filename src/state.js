@@ -40,7 +40,8 @@ export default class State {
   }
 
   static init() {
-    return Promise.resolve(singleton = new InternalState({ time: timestamp(), trace: [] }));
+    singleton = new InternalState({ time: timestamp(), trace: [] });
+    return Promise.resolve(singleton);
   }
 
   static get() {
