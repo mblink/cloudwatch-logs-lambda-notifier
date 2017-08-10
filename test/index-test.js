@@ -1,10 +1,10 @@
 import AWS from 'aws-sdk';
 import sg from 'sendgrid';
+import State from 'lambda-state';
 import event from './event.json';
 import utils from './setup';
 import { CloudWatchLogs, sendgrid } from './stubs';
 import { CloudwatchLogsNotifier, handler } from '../src/index';
-import State from '../src/state';
 
 describe('handler', () => {
   let callback;

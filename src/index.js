@@ -1,7 +1,7 @@
 import { CloudWatchLogs } from 'aws-sdk';
 import he from 'he';
 import sendgrid from 'sendgrid';
-import State from './state';
+import State from 'lambda-state';
 
 const stackTrace = e => (e.stack || []).split('\n').slice(1).map(l => l.trim().replace(/^at /, ''));
 
