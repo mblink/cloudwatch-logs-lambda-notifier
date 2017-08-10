@@ -14,11 +14,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mrdziuban/cloudwatch-logs-lambda-notifier.git"
+    "url": "git+https://github.com/mblink/cloudwatch-logs-lambda-notifier.git"
   },
-  "author": "Matt Dziuban",
-  "license": "UNLICENSED",
-  "private": true,
+  "author": "BondLink <dev@bondlink.org>",
+  "license": "Apache-2.0",
   "dependencies": {
     "aws-sdk": "^2.91.0",
     "he": "^1.1.1",

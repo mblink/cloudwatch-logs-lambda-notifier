@@ -1,6 +1,6 @@
 # CloudWatch Logs lambda notifier
 
-[![Build Status](https://travis-ci.org/mrdziuban/cloudwatch-logs-lambda-notifier.svg?branch=master)](https://travis-ci.org/mrdziuban/cloudwatch-logs-lambda-notifier)
+[![Build Status](https://travis-ci.org/mblink/cloudwatch-logs-lambda-notifier.svg?branch=master)](https://travis-ci.org/mblink/cloudwatch-logs-lambda-notifier)
 
 This is a [lambda](https://aws.amazon.com/lambda/) that will notify via email about alarms triggered by Cloudwatch
 Logs events using the SendGrid API.
