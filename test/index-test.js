@@ -1,9 +1,10 @@
 import AWS from 'aws-sdk';
-import sg from 'sendgrid';
+import geo from 'geoip-lite';
+import sg from '@sendgrid/mail';
 import State from 'lambda-state';
 import event from './event.json';
 import utils from './setup';
-import { CloudWatchLogs, sendgrid } from './stubs';
+import { CloudWatchLogs, geoip, sendgrid } from './stubs';
 import { CloudwatchLogsNotifier, handler } from '../src/index';
 
 describe('handler', () => {
@@ -24,7 +25,8 @@ describe('handler', () => {
   beforeEach(() => {
     callback = utils.stub();
     utils.stub(AWS, 'CloudWatchLogs').returns(CloudWatchLogs);
-    utils.stub(CloudwatchLogsNotifier, 'createSendGridClient').returns(sendgrid);
+    Object.keys(sendgrid).forEach(k => utils.stub(sg, k).returns(sendgrid[k]));
+    Object.keys(geoip).forEach(k => utils.stub(geo, k).returns(geoip[k]));
   });
 
   describe('AWS API calls', () => {
@@ -73,15 +75,15 @@ describe('handler', () => {
   });
 
   describe('built SendGrid email', () => {
-    beforeEach(() => utils.spy(sg.mail, 'Mail'));
+    beforeEach(() => utils.spy(CloudwatchLogsNotifier.prototype, 'sendEmail'));
 
     it('uses the FROM_EMAIL environment variable for the from email', () => {
       process.env.FROM_EMAIL = 'test from';
       return handler(event, {}, callback).then(() => {
         assertCallback();
-        expect(sg.mail.Mail).to.have.been.calledOnce();
-        expect(sg.mail.Mail.firstCall.args[0].email).to.equal('test from');
-        expect(sg.mail.Mail.firstCall.args[0].name).to.equal('AWS Lambda');
+        expect(CloudwatchLogsNotifier.prototype.sendEmail).to.have.been.calledOnce();
+        expect(CloudwatchLogsNotifier.prototype.sendEmail.firstCall.args[0].from.email).to.equal('test from');
+        expect(CloudwatchLogsNotifier.prototype.sendEmail.firstCall.args[0].from.name).to.equal('AWS Lambda');
       });
     });
 
@@ -89,15 +91,15 @@ describe('handler', () => {
       process.env.TO_EMAIL = 'test to';
       return handler(event, {}, callback).then(() => {
         assertCallback();
-        expect(sg.mail.Mail).to.have.been.calledOnce();
-        expect(sg.mail.Mail.firstCall.args[2].email).to.equal('test to');
+        expect(CloudwatchLogsNotifier.prototype.sendEmail).to.have.been.calledOnce();
+        expect(CloudwatchLogsNotifier.prototype.sendEmail.firstCall.args[0].to).to.equal('test to');
       });
     });
 
     it('uses the alarm name in the subject', () => handler(event, {}, callback).then(() => {
       assertCallback();
-      expect(sg.mail.Mail).to.have.been.calledOnce();
-      expect(sg.mail.Mail.firstCall.args[1]).to.equal('ALARM: "test alarm"');
+      expect(CloudwatchLogsNotifier.prototype.sendEmail).to.have.been.calledOnce();
+      expect(CloudwatchLogsNotifier.prototype.sendEmail.firstCall.args[0].subject).to.equal('ALARM: "test alarm"');
     }));
 
     it('includes the text of the log messages in the body', () => {
@@ -106,11 +108,25 @@ describe('handler', () => {
       });
       return handler(event, {}, callback).then(() => {
         assertCallback();
-        expect(sg.mail.Mail).to.have.been.calledOnce();
-        expect(sg.mail.Mail.firstCall.args[3].type).to.equal('text/html');
-        expect(sg.mail.Mail.firstCall.args[3].value).to.match(/test 1<hr>test 2/);
+        expect(CloudwatchLogsNotifier.prototype.sendEmail).to.have.been.calledOnce();
+        expect(CloudwatchLogsNotifier.prototype.sendEmail.firstCall.args[0].html).to.match(/test 1<hr>test 2/);
       });
     });
+
+    ['forwarded-for-ip', 'ip'].forEach(key =>
+      it(`adds geolocation data to JSON logs with "${key}" field`, () => {
+        utils.stub(CloudWatchLogs, 'filterLogEvents').callsArgWith(1, null, {
+          events: [{ message: `{"${key}": "1.1.1.1"}` }]
+        });
+        return handler(event, {}, callback).then(() => {
+          assertCallback();
+          expect(CloudwatchLogsNotifier.prototype.sendEmail).to.have.been.calledOnce();
+          expect(CloudwatchLogsNotifier.prototype.sendEmail.firstCall.args[0].html)
+            .to.match(new RegExp(
+              `{\\n {2}&#x22;${key}&#x22;: &#x22;1\\.1\\.1\\.1&#x22;,` +
+              '\\n {2}&#x22;geolocation&#x22;: &#x22;test geolocation&#x22;\\n}'));
+        });
+      }));
 
     it('html encodes the text of the log messages in the body', () => {
       utils.stub(CloudWatchLogs, 'filterLogEvents').callsArgWith(1, null, {
@@ -118,9 +134,9 @@ describe('handler', () => {
       });
       return handler(event, {}, callback).then(() => {
         assertCallback();
-        expect(sg.mail.Mail).to.have.been.calledOnce();
-        expect(sg.mail.Mail.firstCall.args[3].type).to.equal('text/html');
-        expect(sg.mail.Mail.firstCall.args[3].value).to.match(/&#x3C;div&#x3E;test&#x3C;\/div&#x3E;/);
+        expect(CloudwatchLogsNotifier.prototype.sendEmail).to.have.been.calledOnce();
+        expect(CloudwatchLogsNotifier.prototype.sendEmail.firstCall.args[0].html)
+          .to.match(/&#x3C;div&#x3E;test&#x3C;\/div&#x3E;/);
       });
     });
 
@@ -130,37 +146,33 @@ describe('handler', () => {
       });
       return handler(event, {}, callback).then(() => {
         assertCallback();
-        expect(sg.mail.Mail).to.have.been.calledOnce();
-        expect(sg.mail.Mail.firstCall.args[3].type).to.equal('text/html');
-        expect(sg.mail.Mail.firstCall.args[3].value).to.match(/\n {2}&#x22;test&#x22;: true\n}/);
+        expect(CloudwatchLogsNotifier.prototype.sendEmail).to.have.been.calledOnce();
+        expect(CloudwatchLogsNotifier.prototype.sendEmail.firstCall.args[0].html)
+          .to.match(/\n {2}&#x22;test&#x22;: true\n}/);
       });
     });
   });
 
   describe('SendGrid API calls', () => {
-    beforeEach(() => utils.spy(sendgrid, 'API'));
-
-    it('POSTs to the send endpoint', () => handler(event, {}, callback).then(() => {
-      assertCallback();
-      expect(sendgrid.API).to.have.been.calledOnce();
-      expect(sendgrid.API).to.have.been.calledWithMatch({ method: 'POST', path: '/v3/mail/send' });
-    }));
-
     it('sends the built email', () => {
+      process.env.FROM_EMAIL = 'test from';
       utils.stub(CloudWatchLogs, 'filterLogEvents').callsArgWith(1, null, { events: [{ message: 'test 1' }] });
       return handler(event, {}, callback).then(() => {
         assertCallback();
-        expect(sendgrid.API).to.have.been.calledOnce();
-        expect(sendgrid.API.firstCall.args[0].body.from).to.deep.equal({ email: 'test from', name: 'AWS Lambda' });
-        expect(sendgrid.API.firstCall.args[0].body.subject).to.equal('ALARM: "test alarm"');
-        expect(sendgrid.API.firstCall.args[0].body.content[0].type).to.equal('text/html');
-        expect(sendgrid.API.firstCall.args[0].body.content[0].value).to.match(/test 1/);
+        expect(sg.send).to.have.been.calledOnce();
+        expect(sg.send.firstCall.args[0].from).to.deep.equal({ name: 'AWS Lambda', email: 'test from' });
+        expect(sg.send.firstCall.args[0].subject).to.equal('ALARM: "test alarm"');
+        expect(sg.send.firstCall.args[0].html).to.match(/test 1/);
+        expect(sg.send.firstCall.args[0].text).to.be.undefined();
       });
     });
   });
 
   describe('error handling', () => {
-    beforeEach(() => utils.stub(console, 'error'));
+    beforeEach(() => {
+      utils.stub(console, 'error');
+      sg.send.restore();
+    });
 
     [
       ['State.init', [State, 'init']],
@@ -176,7 +188,7 @@ describe('handler', () => {
         s => s.callsArgWith(1, new Error('CloudWatchLogs.filterLogEvents error'))
       ],
       ['CloudwatchLogsNotifier.prototype.buildEmail', [CloudwatchLogsNotifier.prototype, 'buildEmail']],
-      ['sendgrid.API', [sendgrid, 'API']]
+      ['sendgrid.send', [sg, 'send']]
     ].forEach(([name, fn, genStub]) => it(`handles failure when calling ${name}`, () => {
       if (typeof genStub === 'function') {
         genStub(utils.stub(...fn));

@@ -6,9 +6,12 @@ const CloudWatchLogs = {
   filterLogEvents(_, callback) { callback(null, { events: [] }); }
 };
 
-const sendgrid = {
-  emptyRequest(params) { return params; },
-  API() { return Promise.resolve({ statusCode: 200, body: 'test body', headers: ['test header'] }); }
+const geoip = {
+  lookup: 'test geolocation'
 };
 
-export { CloudWatchLogs, sendgrid };
+const sendgrid = {
+  send: Promise.resolve({ statusCode: 200, body: 'test body', headers: ['test header'] })
+};
+
+export { CloudWatchLogs, geoip, sendgrid };
