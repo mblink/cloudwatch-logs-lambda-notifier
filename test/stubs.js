@@ -14,4 +14,8 @@ const sendgrid = {
   send: Promise.resolve({ statusCode: 200, body: 'test body', headers: ['test header'] })
 };
 
-export { CloudWatchLogs, geoip, sendgrid };
+const SNS = {
+  listSubscriptionsByTopic(_, callback) { callback(null, { Subscriptions: [] }); }
+};
+
+export { CloudWatchLogs, geoip, sendgrid, SNS };

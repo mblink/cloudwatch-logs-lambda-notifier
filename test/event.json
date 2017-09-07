@@ -2,7 +2,8 @@
   "Records": [
     {
       "Sns": {
-        "Message": "{\"AlarmName\":\"test alarm\",\"AlarmDescription\":\"test description\",\"AWSAccountId\":\"123456789ABC\",\"NewStateValue\":\"ALARM\",\"NewStateReason\":\"Threshold Crossed: 1 datapoint (1.0) was greater than the threshold (0.0).\",\"StateChangeTime\":\"2017-03-22T16:13:36.454+0000\",\"Region\":\"US East - N. Virginia\",\"OldStateValue\":\"INSUFFICIENT_DATA\",\"Trigger\":{\"MetricName\":\"test metric\",\"Namespace\":\"LogMetricsError\",\"StatisticType\":\"Statistic\",\"Statistic\":\"SUM\",\"Unit\":null,\"Dimensions\":[],\"Period\":300,\"EvaluationPeriods\":1,\"ComparisonOperator\":\"GreaterThanThreshold\",\"Threshold\":0.0,\"TreatMissingData\":\"\",\"EvaluateLowSampleCountPercentile\":\"\"}}"
+        "Message": "{\"AlarmName\":\"test alarm\",\"AlarmDescription\":\"test description\",\"AWSAccountId\":\"123456789ABC\",\"NewStateValue\":\"ALARM\",\"NewStateReason\":\"Threshold Crossed: 1 datapoint (1.0) was greater than the threshold (0.0).\",\"StateChangeTime\":\"2017-03-22T16:13:36.454+0000\",\"Region\":\"US East - N. Virginia\",\"OldStateValue\":\"INSUFFICIENT_DATA\",\"Trigger\":{\"MetricName\":\"test metric\",\"Namespace\":\"LogMetricsError\",\"StatisticType\":\"Statistic\",\"Statistic\":\"SUM\",\"Unit\":null,\"Dimensions\":[],\"Period\":300,\"EvaluationPeriods\":1,\"ComparisonOperator\":\"GreaterThanThreshold\",\"Threshold\":0.0,\"TreatMissingData\":\"\",\"EvaluateLowSampleCountPercentile\":\"\"}}",
+        "TopicArn": "test topic arn"
       }
     }
   ]
