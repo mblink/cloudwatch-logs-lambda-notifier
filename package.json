@@ -9,7 +9,7 @@
     "lint": "eslint --config .eslintrc.js src test",
     "local": "npm run compile && node-lambda run",
     "postinstall": "node-lambda setup",
-    "test": "mocha --compilers js:babel-core/register --reporter mocha-better-spec-reporter --recursive",
+    "test": "mocha --require babel-core/register --reporter mocha-better-spec-reporter --recursive",
     "update-geoip": "node node_modules/geoip-lite/scripts/updatedb.js"
   },
   "repository": {
@@ -19,8 +19,8 @@
   "author": "BondLink <dev@bondlink.org>",
   "license": "Apache-2.0",
   "dependencies": {
-    "@sendgrid/mail": "^6.1.3",
-    "aws-sdk": "^2.119.0",
+    "@sendgrid/mail": "^6.1.4",
+    "aws-sdk": "^2.126.0",
     "geoip-lite": "^1.2.1",
     "he": "^1.1.1",
     "lambda-state": "github:mblink/lambda-state#0.0.1"
@@ -30,13 +30,13 @@
     "babel-preset-es2015": "^6.24.1",
     "chai": "^4.1.2",
     "dirty-chai": "^2.0.1",
-    "eslint": "^4.7.1",
+    "eslint": "^4.8.0",
     "eslint-config-airbnb": "^15.1.0",
     "eslint-plugin-import": "^2.7.0",
-    "mocha": "^3.5.3",
+    "mocha": "^4.0.0",
     "mocha-better-spec-reporter": "^3.1.0",
-    "node-lambda": "^0.11.3",
-    "sinon": "^3.3.0",
-    "sinon-chai": "^2.13.0"
+    "node-lambda": "^0.11.4",
+    "sinon": "^4.0.1",
+    "sinon-chai": "^2.14.0"
   }
 }
