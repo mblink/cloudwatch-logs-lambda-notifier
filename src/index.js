@@ -19,6 +19,7 @@ class CloudwatchLogsNotifier {
     this.cwLogs = new CloudWatchLogs();
     this.sns = new SNS();
     this.sendgrid = CloudwatchLogsNotifier.setupSendGrid();
+    this.event = event;
     this.message = JSON.parse(event.Records[0].Sns.Message);
     this.snsTopicArn = event.Records[0].Sns.TopicArn;
 
@@ -29,7 +30,7 @@ class CloudwatchLogsNotifier {
 
   handle(callback) {
     return State.init()
-      .then(State.info('CloudWatch alarm', this.message))
+      .then(State.info('CloudWatch alarm event', this.event))
       .then(this.getMetricFilters.bind(this))
       .then(State.info('CloudWatch metrics filters'))
       .then(this.getLogs.bind(this))
