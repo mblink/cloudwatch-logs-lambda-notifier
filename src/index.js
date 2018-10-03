@@ -98,11 +98,11 @@ class CloudwatchLogsNotifier {
       events.map(e => transformers.reduce((acc, transformer) =>
         acc.then(logLine => transformer(logLine)), Promise.resolve(e.message))))
       .then((messages) => {
-        const logsUrl = 'https://console.aws.amazon.com/cloudwatch/home#logEventViewer:' +
-                          `group=${encodeURIComponent(params.logGroupName)};` +
-                          `filter=${encodeURIComponent(params.filterPattern)};` +
-                          `start=${encodeURIComponent(this.start.toISOString())};` +
-                          `end=${encodeURIComponent(this.end.toISOString())}`;
+        const logsUrl = 'https://console.aws.amazon.com/cloudwatch/home#logEventViewer:'
+                          + `group=${encodeURIComponent(params.logGroupName)};`
+                          + `filter=${encodeURIComponent(params.filterPattern)};`
+                          + `start=${encodeURIComponent(this.start.toISOString())};`
+                          + `end=${encodeURIComponent(this.end.toISOString())}`;
         return {
           to: toEmails,
           from: { name: 'AWS Lambda', email: process.env.FROM_EMAIL },
@@ -122,5 +122,9 @@ class CloudwatchLogsNotifier {
   }
 }
 
-exports.CloudwatchLogsNotifier = CloudwatchLogsNotifier;
-exports.handler = (event, context, callback) => new CloudwatchLogsNotifier(event).handle(callback);
+const handler = (event, context, callback) => new CloudwatchLogsNotifier(event).handle(callback);
+
+export {
+  CloudwatchLogsNotifier,
+  handler
+};

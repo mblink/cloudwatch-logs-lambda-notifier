@@ -176,8 +176,8 @@ describe('handler', () => {
           expect(CloudwatchLogsNotifier.prototype.sendEmail).to.have.been.calledOnce();
           expect(CloudwatchLogsNotifier.prototype.sendEmail.firstCall.args[0].html)
             .to.match(new RegExp(
-              `{\\n {2}&#x22;${key}&#x22;: &#x22;1\\.1\\.1\\.1&#x22;,` +
-              '\\n {2}&#x22;geolocation&#x22;: &#x22;test geolocation&#x22;\\n}'));
+              `{\\n {2}&#x22;${key}&#x22;: &#x22;1\\.1\\.1\\.1&#x22;,`
+              + '\\n {2}&#x22;geolocation&#x22;: &#x22;test geolocation&#x22;\\n}'));
         });
       }));
 
