@@ -11,7 +11,10 @@ const testFns = ['spy', 'stub', 'mock'];
 beforeEach(() => {
   utils.sandbox = sinon.createSandbox();
   Object.assign(utils, ...testFns.map(fn => ({ [fn]: utils.sandbox[fn].bind(utils.sandbox) })));
-  if (process.env.ALLOW_CONSOLE !== 'true') { utils.stub(console, 'log'); }
+  if (process.env.ALLOW_CONSOLE !== 'true') {
+    utils.stub(console, 'log');
+    utils.stub(console, 'warn');
+  }
 });
 
 afterEach(() => {

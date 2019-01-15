@@ -9,12 +9,13 @@ import { CloudwatchLogsNotifier, handler } from '../src/index';
 
 describe('handler', () => {
   let callback;
+  const origEnvVars = { FROM_EMAIL: '', TO_EMAIL: '', SENDGRID_API_KEY: '', SENDGRID_CUSTOM_ARGS: '' };
 
-  const assertCallback = () => {
+  const assertCallback = (expectedCount = 6, expectedLevel = 'info') => {
     expect(callback).to.have.been.calledOnce();
     expect(callback.firstCall.args[0]).to.be.null();
-    expect(callback.firstCall.args[1].trace).to.have.lengthOf(6);
-    expect(callback.firstCall.args[1].level).to.equal('info');
+    expect(callback.firstCall.args[1].trace).to.have.lengthOf(expectedCount);
+    expect(callback.firstCall.args[1].level).to.equal(expectedLevel);
   };
 
   const assertErrorCallback = () => {
@@ -24,11 +25,15 @@ describe('handler', () => {
 
   beforeEach(() => {
     callback = utils.stub();
+    Object.keys(origEnvVars).forEach(k => (origEnvVars[k] = process.env[k]));
     utils.stub(AWS, 'CloudWatchLogs').returns(CloudWatchLogs);
     utils.stub(AWS, 'SNS').returns(SNS);
     Object.keys(sendgrid).forEach(k => utils.stub(sg, k).returns(sendgrid[k]));
     Object.keys(geoip).forEach(k => utils.stub(geo, k).returns(geoip[k]));
   });
+
+  afterEach(() => Object.keys(origEnvVars).forEach(k =>
+    (origEnvVars[k] ? (process.env[k] = origEnvVars[k]) : (delete process.env[k]))));
 
   describe('AWS API calls', () => {
     it('gets metric filters from AWS', () => {
@@ -202,6 +207,36 @@ describe('handler', () => {
         expect(CloudwatchLogsNotifier.prototype.sendEmail).to.have.been.calledOnce();
         expect(CloudwatchLogsNotifier.prototype.sendEmail.firstCall.args[0].html)
           .to.match(/\n {2}&#x22;test&#x22;: true\n}/);
+      });
+    });
+
+    it('adds custom args', () => {
+      const args = { arg1: 'test1', arg2: 'test2' };
+      process.env.SENDGRID_CUSTOM_ARGS = JSON.stringify(args);
+      return handler(event, {}, callback).then(() => {
+        assertCallback();
+        expect(CloudwatchLogsNotifier.prototype.sendEmail).to.have.been.calledOnce();
+        expect(CloudwatchLogsNotifier.prototype.sendEmail.firstCall.args[0].customArgs).to.deep.equal(args);
+      });
+    });
+
+    it('sets custom args to an empty object when not present', () => handler(event, {}, callback).then(() => {
+      assertCallback();
+      expect(CloudwatchLogsNotifier.prototype.sendEmail).to.have.been.calledOnce();
+      expect(CloudwatchLogsNotifier.prototype.sendEmail.firstCall.args[0].customArgs).to.deep.equal({});
+    }));
+
+    it('logs a warning when custom args are not parseable', () => {
+      const args = '{ "invalid" }';
+      process.env.SENDGRID_CUSTOM_ARGS = args;
+      return handler(event, {}, callback).then(() => {
+        assertCallback(7, 'warn');
+        expect(CloudwatchLogsNotifier.prototype.sendEmail).to.have.been.calledOnce();
+        expect(CloudwatchLogsNotifier.prototype.sendEmail.firstCall.args[0].customArgs).to.deep.equal({});
+
+        const trace = callback.firstCall.args[1].trace.find(t => t.level === 'warn');
+        expect(trace.message).to.equal('Failed to parse SendGrid custom args');
+        expect(trace.aux.env).to.equal(args);
       });
     });
   });
