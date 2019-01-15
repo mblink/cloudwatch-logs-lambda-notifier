@@ -98,6 +98,14 @@ class CloudwatchLogsNotifier {
       events.map(e => transformers.reduce((acc, transformer) =>
         acc.then(logLine => transformer(logLine)), Promise.resolve(e.message))))
       .then((messages) => {
+        try {
+          return Promise.resolve([messages, JSON.parse(process.env.SENDGRID_CUSTOM_ARGS || '{}')]);
+        } catch (err) {
+          return State.warn('Failed to parse SendGrid custom args',
+            { err, env: process.env.SENDGRID_CUSTOM_ARGS })([messages, {}]);
+        }
+      })
+      .then(([messages, customArgs]) => {
         const logsUrl = 'https://console.aws.amazon.com/cloudwatch/home#logEventViewer:'
                           + `group=${encodeURIComponent(params.logGroupName)};`
                           + `filter=${encodeURIComponent(params.filterPattern)};`
@@ -112,7 +120,8 @@ class CloudwatchLogsNotifier {
             Logs:<br><br>
             <pre>${messages.join('<hr>')}</pre>
             <br>
-            <a href="${he.encode(logsUrl)}">View logs in CloudWatch</a>`
+            <a href="${he.encode(logsUrl)}">View logs in CloudWatch</a>`,
+          customArgs
         };
       });
   }
