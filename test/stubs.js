@@ -6,10 +6,6 @@ const CloudWatchLogs = {
   filterLogEvents(_, callback) { callback(null, { events: [] }); }
 };
 
-const geoip = {
-  lookup: 'test geolocation'
-};
-
 const sendgrid = {
   send: Promise.resolve({ statusCode: 200, body: 'test body', headers: ['test header'] })
 };
@@ -18,4 +14,4 @@ const SNS = {
   listSubscriptionsByTopic(_, callback) { callback(null, { Subscriptions: [] }); }
 };
 
-export { CloudWatchLogs, geoip, sendgrid, SNS };
+export { CloudWatchLogs, sendgrid, SNS };

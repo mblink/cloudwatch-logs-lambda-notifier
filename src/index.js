@@ -4,11 +4,10 @@ import sendgrid from '@sendgrid/mail';
 import State from 'lambda-state';
 
 import jsonParse from './transformers/json-parse';
-import geolocate from './transformers/geolocate';
 import prettyPrint from './transformers/pretty-print';
 import htmlEncode from './transformers/html-encode';
 
-const transformers = [jsonParse, geolocate, prettyPrint, htmlEncode];
+const transformers = [jsonParse, prettyPrint, htmlEncode];
 
 const stackTrace = e => (e.stack || []).split('\n').slice(1).map(l => l.trim().replace(/^at /, ''));
 
@@ -97,7 +96,7 @@ class CloudwatchLogsNotifier {
     return Promise.all(
       events.map(e => transformers.reduce((acc, transformer) =>
         acc.then(logLine => transformer(logLine)), Promise.resolve(e.message))))
-      .then((messages) => {
+      .then(messages => {
         try {
           return Promise.resolve([messages, JSON.parse(process.env.SENDGRID_CUSTOM_ARGS || '{}')]);
         } catch (err) {

@@ -1,10 +1,9 @@
 import AWS from 'aws-sdk';
-import geo from 'geoip-lite';
 import sg from '@sendgrid/mail';
 import State from 'lambda-state';
 import event from './event.json';
 import utils from './setup';
-import { CloudWatchLogs, geoip, sendgrid, SNS } from './stubs';
+import { CloudWatchLogs, sendgrid, SNS } from './stubs';
 import { CloudwatchLogsNotifier, handler } from '../src/index';
 
 describe('handler', () => {
@@ -29,7 +28,6 @@ describe('handler', () => {
     utils.stub(AWS, 'CloudWatchLogs').returns(CloudWatchLogs);
     utils.stub(AWS, 'SNS').returns(SNS);
     Object.keys(sendgrid).forEach(k => utils.stub(sg, k).returns(sendgrid[k]));
-    Object.keys(geoip).forEach(k => utils.stub(geo, k).returns(geoip[k]));
   });
 
   afterEach(() => Object.keys(origEnvVars).forEach(k =>
@@ -170,21 +168,6 @@ describe('handler', () => {
         expect(CloudwatchLogsNotifier.prototype.sendEmail.firstCall.args[0].html).to.match(/test 1<hr>test 2/);
       });
     });
-
-    ['forwarded-for-ip', 'ip'].forEach(key =>
-      it(`adds geolocation data to JSON logs with "${key}" field`, () => {
-        utils.stub(CloudWatchLogs, 'filterLogEvents').callsArgWith(1, null, {
-          events: [{ message: `{"${key}": "1.1.1.1"}` }]
-        });
-        return handler(event, {}, callback).then(() => {
-          assertCallback();
-          expect(CloudwatchLogsNotifier.prototype.sendEmail).to.have.been.calledOnce();
-          expect(CloudwatchLogsNotifier.prototype.sendEmail.firstCall.args[0].html)
-            .to.match(new RegExp(
-              `{\\n {2}&#x22;${key}&#x22;: &#x22;1\\.1\\.1\\.1&#x22;,`
-              + '\\n {2}&#x22;geolocation&#x22;: &#x22;test geolocation&#x22;\\n}'));
-        });
-      }));
 
     it('html encodes the text of the log messages in the body', () => {
       utils.stub(CloudWatchLogs, 'filterLogEvents').callsArgWith(1, null, {

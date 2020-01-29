@@ -2,6 +2,7 @@ module.exports = {
   extends: 'airbnb/base',
   env: { mocha: true },
   rules: {
+    'arrow-parens': ['error', 'as-needed'],
     'comma-dangle': ['error', 'never'],
     'function-paren-newline': 'off',
     'implicit-arrow-linebreak': 'off',
